@@ -8,8 +8,8 @@ from tortoise.contrib.pydantic import pydantic_model_creator
 class User(Model):
     id = fields.IntField(pk=True, index=True)
     username = fields.CharField(max_length=20, null=False, unique=True)
-    email = fields.CharField(max_length=100, null=False, unique=True)
-    password = fields.CharField(max_length=10, null=False)
+    email = fields.CharField(max_length=200, null=False, unique=True)
+    password = fields.CharField(max_length=100, null=False)
     is_verified = fields.BooleanField(default=False)
     join_data = fields.DatetimeField(default=datetime.utcnow)
 
@@ -37,7 +37,8 @@ class Product(Model):
 
 
 user_pydantic = pydantic_model_creator(User, name="User", exclude=("is_verified", ))
-user_pydanticIn = pydanticIn = pydantic_model_creator(User, name="UserIn", exclude_readonly=True)
+user_pydanticIn = pydanticIn = pydantic_model_creator(User, name="UserIn", exclude_readonly=True,
+                                                      exclude=("is_verified", "join_data"))
 user_pydanticOut = pydantic_model_creator(User, name="UserOut", exclude=("password",))
 
 business_pydantic = pydantic_model_creator(Business, name="Business")
