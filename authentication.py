@@ -31,3 +31,35 @@ async def verify_token(token:str):
         )
 
     return user
+
+
+async def verify_password(plain_password, hashed_password):
+    """проверка пароля с паролем в ДБ"""
+    return password_context.verify(plain_password, hashed_password)
+
+
+async def authenticate_user(username, password):
+    """аутентификация пользователя"""
+    user = await User.get(username=username)
+    if user and verify_password(password, user.password):
+        return user
+    return False
+
+
+async def token_generator(username: str, password: str):
+    """генератор токена"""
+    user = await authenticate_user(username, password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token_data = {
+        "id": user.id,
+        "username": user.username
+    }
+
+    token = jwt.encode(token_data, config_credential["SECRET"])
+    return token
