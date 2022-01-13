@@ -130,6 +130,7 @@ def index():
 @app.post("/uplloadfile/profile")
 async def create_upload_file(file: UploadFile = File(...),
                              user: user_pydantic = Depends(get_current_user)):
+    """загрузка аватара пользователя"""
     FILEPATH = "./static/images"
     filename = file.filename
     extension = filename.split(".")[1]
@@ -167,6 +168,7 @@ async def create_upload_file(file: UploadFile = File(...),
 @app.post("/uploadfile/product/{id}")
 async def create_upload_productfile(id: int, file: UploadFile = File(...),
                                     user: user_pydantic = Depends(get_current_user)):
+    """загрузка изображения продукта"""
     FILEPATH = "./static/images"
     filename = file.filename
     extension = filename.split(".")[1]
