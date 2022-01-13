@@ -1,4 +1,4 @@
-fastapi
+fastapi~=0.70.0
 uvicorn==0.16.0
 pydantic==1.9.0
 tortoise-orm==0.18.1
@@ -7,3 +7,7 @@ Jinja2==3.0.3
 PyJWT==2.3.0
 
 
+
+Pillow~=9.0.0
+python-dotenv~=0.19.2
+passlib~=1.7.4
