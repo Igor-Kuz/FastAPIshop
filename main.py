@@ -55,7 +55,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": "Bearer"}
         )
     return await user
 
@@ -121,7 +121,7 @@ async def email_verification(request: Request, token: str):
     raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": "Bearer"}
         )
 
 
@@ -162,7 +162,7 @@ async def create_upload_file(file: UploadFile = File(...),
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated to do this",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": "Bearer"}
         )
     file_url = "localhost:8000" + generated_name[1:]
     return {"status": "ok", "filename": file_url}
@@ -201,10 +201,76 @@ async def create_upload_productfile(id: int, file: UploadFile = File(...),
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated to do this",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": "Bearer"}
         )
     file_url = "localhost:8000" + generated_name[1:]
     return {"status": "ok", "filename": file_url}
+
+
+# CRUD
+@app.post("/product")
+async def add_new_product(product: product_pydanticIn,
+                          user: user_pydantic = Depends(get_current_user)):
+    """добавление продукта"""
+    product = product.dict(exclude_unset=True)
+
+    if product["original_price"] > 0:
+        product["percentage_discount"] = ((product["original_price"] - product["new_price"])
+                                          / product["original_price"]) * 100
+
+        product_obj = await Product.create(**product, business=user)
+        product_obj = await product_pydantic.from_tortoise_orm(product_obj)
+        return {"status": "ok", "data": product_obj}
+
+    else:
+        return {"status": "error"}
+
+
+@app.get("/products")
+async def get_products():
+    """получение прдуктов"""
+    response = await product_pydantic.from_queryset(Product.all())
+    return {"status": "ok", "data": response}
+
+
+@app.get("/product/{id}")
+async def get_single_product(id: int):
+    product = await Product.get(id = id)
+    business = await product.business
+    owner = await business.owner
+    response = await product_pydantic.from_queryset_single(Product.get(id = id))
+    return {
+        "status": "ok",
+        "data": {
+            "product_details": response,
+            "business_details": {
+                "name": business.business_name,
+                "city": business.city,
+                "region": business.region,
+                "description": business.business_description,
+                "logo": business.logo,
+                "owner_id": owner.id,
+                "email": owner.email,
+                "join_date": owner.join_date.strftime("%b %d %Y")
+            }
+        }
+    }
+
+
+@app.delete("/product/{id}")
+async def delete_product(id: int, user: user_pydantic= Depends(get_current_user)):
+    product = await Product.get(id= id)
+    business = await product.business
+    owner = await business.owner
+    if user == owner:
+        product.delete()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated to do this",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return {"status": "ok"}
 
 
 register_tortoise(
