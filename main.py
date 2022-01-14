@@ -228,13 +228,14 @@ async def add_new_product(product: product_pydanticIn,
 
 @app.get("/products")
 async def get_products():
-    """получение прдуктов"""
+    """получение данных прдуктов"""
     response = await product_pydantic.from_queryset(Product.all())
     return {"status": "ok", "data": response}
 
 
 @app.get("/product/{id}")
 async def get_single_product(id: int):
+    """получение информации о конкретном продукте"""
     product = await Product.get(id = id)
     business = await product.business
     owner = await business.owner
@@ -259,6 +260,7 @@ async def get_single_product(id: int):
 
 @app.delete("/product/{id}")
 async def delete_product(id: int, user: user_pydantic= Depends(get_current_user)):
+    """удаление продукта"""
     product = await Product.get(id= id)
     business = await product.business
     owner = await business.owner
@@ -271,6 +273,31 @@ async def delete_product(id: int, user: user_pydantic= Depends(get_current_user)
             headers={"WWW-Authenticate": "Bearer"}
         )
     return {"status": "ok"}
+
+
+@app.put("/product/{id}")
+async def update_product(id: int,
+                         update_info:product_pydanticIn,
+                         user: user_pydantic = Depends(get_current_user)):
+    """обновление информации о продукте"""
+    product = await Product.get(id=id)
+    business = await product.business
+    owner = await business.owner
+    update_info = update_info.dict(exclude_unset=True)
+    update_info["date_published"] = datetime.utcnow()
+    if user == owner and update_info["original_price"] > 0:
+        update_info["percentage_discount"] = \
+            ((update_info["original_price"]-update_info["new_price"]) / update_info["original_price"]) * 100
+        product = await product.update_from_dict(update_info)
+        product.save()
+        response = await product_pydantic.from_tortoise_orm(product)
+        return {"status": "ok", "data": response}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated to do this",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
 
 register_tortoise(
