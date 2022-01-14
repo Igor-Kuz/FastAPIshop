@@ -236,10 +236,10 @@ async def get_products():
 @app.get("/product/{id}")
 async def get_single_product(id: int):
     """получение информации о конкретном продукте"""
-    product = await Product.get(id = id)
+    product = await Product.get(id=id)
     business = await product.business
     owner = await business.owner
-    response = await product_pydantic.from_queryset_single(Product.get(id = id))
+    response = await product_pydantic.from_queryset_single(Product.get(id=id))
     return {
         "status": "ok",
         "data": {
@@ -251,6 +251,7 @@ async def get_single_product(id: int):
                 "description": business.business_description,
                 "logo": business.logo,
                 "owner_id": owner.id,
+                "business_id": business.id,
                 "email": owner.email,
                 "join_date": owner.join_date.strftime("%b %d %Y")
             }
@@ -259,13 +260,13 @@ async def get_single_product(id: int):
 
 
 @app.delete("/product/{id}")
-async def delete_product(id: int, user: user_pydantic= Depends(get_current_user)):
+async def delete_product(id: int, user: user_pydantic = Depends(get_current_user)):
     """удаление продукта"""
-    product = await Product.get(id= id)
+    product = await Product.get(id=id)
     business = await product.business
     owner = await business.owner
     if user == owner:
-        product.delete()
+        await product.delete()
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -277,7 +278,7 @@ async def delete_product(id: int, user: user_pydantic= Depends(get_current_user)
 
 @app.put("/product/{id}")
 async def update_product(id: int,
-                         update_info:product_pydanticIn,
+                         update_info: product_pydanticIn,
                          user: user_pydantic = Depends(get_current_user)):
     """обновление информации о продукте"""
     product = await Product.get(id=id)
@@ -289,8 +290,28 @@ async def update_product(id: int,
         update_info["percentage_discount"] = \
             ((update_info["original_price"]-update_info["new_price"]) / update_info["original_price"]) * 100
         product = await product.update_from_dict(update_info)
-        product.save()
+        await product.save()
         response = await product_pydantic.from_tortoise_orm(product)
+        return {"status": "ok", "data": response}
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated to do this",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+
+@app.put("update_business/{id}")
+async def update_business(id: int, update_business: business_pydanticIn,
+                          user: user_pydantic = Depends(get_current_user)):
+    """Обновление инфформации о бизнессе"""
+    update_business = update_business.dict()
+    business = await Business.get(id=id)
+    business_owner = await business.owner
+    if user == business_owner:
+        await business.update_from_dict(update_business)
+        await business.save()
+        response = await business_pydantic.from_tortoise_orm(business)
         return {"status": "ok", "data": response}
     else:
         raise HTTPException(
