@@ -304,7 +304,7 @@ async def update_product(id: int,
 @app.put("update_business/{id}")
 async def update_business(id: int, update_business: business_pydanticIn,
                           user: user_pydantic = Depends(get_current_user)):
-    """Обновление инфформации о бизнессе"""
+    """Обновление информации о бизнессе"""
     update_business = update_business.dict()
     business = await Business.get(id=id)
     business_owner = await business.owner
@@ -319,6 +319,22 @@ async def update_business(id: int, update_business: business_pydanticIn,
             detail="Not authenticated to do this",
             headers={"WWW-Authenticate": "Bearer"}
         )
+
+
+@app.delete("delete_business/{id}")
+async def delete_business(id: int, user: user_pydantic = Depends(get_current_user)):
+    """удаление бизнесса"""
+    business = await Business.get(id=id)
+    business_owner = await business.owner
+    if user == business_owner:
+        await business.delete()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated to do this",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return {"status": "ok"}
 
 
 register_tortoise(
