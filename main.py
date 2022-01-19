@@ -7,7 +7,6 @@ from models import *
 from authentication import *
 from emails import *
 
-# 3465sd
 
 # auth
 from authentication import *
@@ -30,8 +29,23 @@ import secrets
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 
+# CORS headers
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI()
 
+# CORS url
+origins = [
+    'http://localhost:3000'
+]
+
+# adding middleware
+app.add_middleware(CORSMiddleware,
+                   allow_origins=origins,
+                   allow_credentials=True,
+                   allow_methods=['*'],
+                   allow_headers=['*']
+                   )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 

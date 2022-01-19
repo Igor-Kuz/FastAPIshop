@@ -36,8 +36,5 @@
 ##### or
     uvicorn main:app --reload
 ##### to use autorestart after changing code
-#### To look through autodocumentation please visit
+#### To look through this app please visit
     localhos:8000/docs 
-#### and you'll be redirected to swagger documentation or use 
-    localhost:8000/redoc 
-#### for alternative version.
